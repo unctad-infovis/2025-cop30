@@ -22,6 +22,7 @@ const getHashValue = (key) => {
 
 const hemisphere = getHashValue('hemisphere') ? getHashValue('hemisphere').replace('%20', ' ') : 'World';
 const month = getHashValue('month') ? getHashValue('month') : 'Year';
+const speed = getHashValue('speed') ? getHashValue('speed') : 200;
 
 const hemispheres = {
   World: 0,
@@ -148,7 +149,7 @@ function App() {
         }
         return newState;
       });
-    }, 50);
+    }, parseInt(speed, 10));
 
     // Clearing the interval
     return () => {
