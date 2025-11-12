@@ -74,7 +74,8 @@ function App() {
   const [curYear, setCurYear] = useState(start_year);
   const [data, setData] = useState(null);
 
-  const tooltip = d3.select('.tooltip')
+  const tooltip = d3.select(appRef.current)
+    .select('.tooltip')
     .style('position', 'absolute')
     .style('padding', '4px 8px')
     .style('background', 'white')
@@ -113,7 +114,6 @@ function App() {
       .data(bar_data);
 
     bars.exit().remove();
-    // Define tooltip div (once)
 
     bars.enter().append('rect')
       .attr('class', 'bar')
@@ -128,13 +128,21 @@ function App() {
       .attr('y', d => ((d > 0) ? y.current(Math.max(0, d)) : y.current(Math.max(0, d)) + 1))
       .attr('x', (d, i) => x.current(i))
       .on('mousemove', (event, d) => {
+        // Get container bounding box
+        const containerRect = appRef.current.getBoundingClientRect();
+
+        // Mouse position relative to container
+        const mouseX = event.clientX - containerRect.left;
+        const mouseY = event.clientY - containerRect.top;
+
         const i = Array.from(event.currentTarget.parentNode.children).indexOf(event.currentTarget);
         const xValue = x.current.domain()[i]; // your x label
+
         tooltip
           .style('opacity', 1)
           .html(`${xValue + start_year}: <b>${d.toFixed(2)}°C</b>`)
-          .style('left', `${event.pageX - 70}px`)
-          .style('top', `${event.pageY - 20}px`);
+          .style('left', `${mouseX + 30}px`) // offset slightly so tooltip is not on top of cursor
+          .style('top', `${mouseY + 30}px`);
       })
       .on('mouseout', () => tooltip.style('opacity', 0));
   }, [curYear, data, f, tooltip]);
