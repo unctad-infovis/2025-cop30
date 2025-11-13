@@ -261,6 +261,7 @@ function App() {
         UN Trade and Development (UNCTAD), based
         {' '}
         <a href="https://data.giss.nasa.gov/gistemp/" target="_blank" rel="noreferrer">NASA</a>
+        .
         <br />
         <em>Note:</em>
         {' '}
