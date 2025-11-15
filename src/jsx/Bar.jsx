@@ -10,8 +10,10 @@ import { useIsVisible } from 'react-is-visible';
 // https://d3js.org/
 import * as d3 from 'd3';
 
-// https://vis4.net/chromajs/
 import chroma from 'chroma-js';
+import roundNr from './helpers/RoundNr.js';
+
+// https://vis4.net/chromajs/
 // Use chroma to make the color scale.
 // https://gka.github.io/chroma.js/
 
@@ -22,13 +24,15 @@ const getHashValue = (key) => {
 
 const hemisphere = getHashValue('hemisphere') ? getHashValue('hemisphere').replace('%20', ' ') : 'World';
 const month = getHashValue('month') ? getHashValue('month') : 'Year';
-const speed = getHashValue('speed') ? getHashValue('speed') : 200;
+const speed = getHashValue('speed') ? getHashValue('speed') : 100;
 
+// eslint-disable-next-line
 const hemispheres = {
   World: 0,
   'Northern hemisphere': 1,
   'Southern hemisphere': 2
 };
+// eslint-disable-next-line
 const months = {
   January: 'Jan',
   February: 'Feb',
@@ -45,12 +49,12 @@ const months = {
   Year: 'J-D'
 };
 
-let start_year = 1880;
-let end_year = 2024;
+const start_year = 1850;
+const end_year = 2024;
 
 function App() {
-  const scaleMax = 1.3;
-  const scaleMin = -1.3;
+  const scaleMax = 1.5;
+  const scaleMin = -1.5;
   const f = chroma.scale('RdYlBu').domain([scaleMax, 0, scaleMin]);
   const f_text = chroma.scale(['red', 'rgba(0, 0, 0, 0.3)', 'blue']).padding(-1).domain([scaleMax, 0, scaleMin]);
   const margin = useMemo(() => ({
@@ -73,6 +77,7 @@ function App() {
   const [currentTemp, setCurrentTemp] = useState(0);
   const [curYear, setCurYear] = useState(start_year);
   const [data, setData] = useState(null);
+  const [isFinished, setIsFinished] = useState(false);
 
   const tooltip = d3.select(appRef.current)
     .select('.tooltip')
@@ -148,43 +153,57 @@ function App() {
   }, [curYear, data, f, tooltip]);
 
   const startInterval = useCallback(() => {
-    interval.current = setInterval(() => {
-      setCurYear(currentState => {
-        setCurrentTemp(data[currentState - start_year + 1]);
-        const newState = currentState + 1;
-        if (newState >= end_year) {
-          clearInterval(interval.current);
-        }
-        return newState;
-      });
-    }, parseInt(speed, 10));
+    setTimeout(() => {
+      interval.current = setInterval(() => {
+        setCurYear(currentState => {
+          const newState = currentState + 1;
 
-    // Clearing the interval
+          if (newState > end_year) {
+            clearInterval(interval.current);
+            setIsFinished(true); // 👉 Animation ended
+            return currentState;
+          }
+          setCurrentTemp(data[currentState - start_year + 1]);
+          return newState;
+        });
+      }, parseInt(speed, 10));
+    }, 1000);
+
     return () => {
       interval.current = null;
       clearInterval(interval.current);
     };
   }, [data]);
 
+  const restartAnimation = () => {
+    setCurYear(start_year);
+    setCurrentTemp(data[0]);
+    setIsFinished(false);
+
+    clearInterval(interval.current);
+    startInterval();
+  };
+
   const getData = useCallback(() => {
-    const file_path = `${(window.location.href.includes('unctad.org')) ? 'https://storage.unctad.org/2025-cop30/' : (window.location.href.includes('localhost:80')) ? './' : 'https://unctad-infovis.github.io/2025-cop30/'}`;
-    Promise.all([
-      d3.text(`${file_path}assets/data/GLB.Ts+dSST.csv`),
-      d3.text(`${file_path}assets/data/NH.Ts+dSST.csv`),
-      d3.text(`${file_path}assets/data/SH.Ts+dSST.csv`)
-    ]).then((files) => {
-      files = files.map(file => d3.csvParse(file.split('\n').slice(1).join('\n')));
-      setData(files[hemispheres[hemisphere]].map((file, i) => {
-        if (i === 0 && file[months[month]] === '***') {
-          start_year = 1880;
-        } else if (i === (files[hemispheres[hemisphere]].length - 1) && file[months[month]] === '***') {
-          end_year = 2024;
-        }
-        return +file[months[month]];
-      }));
-    }).catch((err) => {
-      console.log(err);
-    });
+    setData([-0.0697, 0.06733333333, 0.0897, 0.05613333333, 0.06026666667, 0.0549, -0.01933333333, -0.1294666667, -0.03116666667, 0.08633333333, -0.06113333333, -0.1185333333, -0.2126666667, -0.02223333333, -0.07253333333, 0.04203333333, 0.04743333333, 0.02706666667, 0.0338, 0.06846666667, 0.0089, -0.01306666667, -0.0003333333333, 0.005566666667, -0.0318, -0.04223333333, -0.06796666667, 0.2863666667, 0.3473666667, 0.0477, 0.0305, 0.122625, 0.0694, 0.019375, -0.114, -0.1089, -0.0987, -0.1519, 0.0363, 0.130325, -0.140125, -0.022975, -0.0864, -0.104675, -0.097375, -0.0244, 0.09565, 0.1105, -0.078875, 0.044475, 0.14975, 0.086425, -0.049775, -0.155225, -0.227325, -0.0395, 0.0375, -0.138925, -0.176375, -0.2143, -0.17835, -0.1915, -0.1199, -0.104025, 0.085625, 0.133025, -0.091325, -0.216475, -0.074375, -0.010325, 0.01095, 0.0766, -0.011025, 0.004175, 0.006875, 0.04335, 0.179725, 0.0727, 0.0873, -0.0848, 0.1295, 0.194, 0.137675, -0.0153, 0.133175, 0.079875, 0.12945, 0.26135, 0.274725, 0.260025, 0.34182, 0.3624, 0.28776, 0.30208, 0.44512, 0.33164, 0.20018, 0.2143333333, 0.1823666667, 0.18195, 0.1005333333, 0.2424833333, 0.2921166667, 0.3643666667, 0.15805, 0.1253, 0.069, 0.3044333333, 0.3390833333, 0.3016166667, 0.2483333333, 0.3172333333, 0.2847666667, 0.3111833333, 0.07321666667, 0.1624333333, 0.21605, 0.2448166667, 0.18915, 0.32415, 0.2798833333, 0.1647, 0.27715, 0.4113833333, 0.1674, 0.2199666667, 0.1356333333, 0.4225, 0.3316666667, 0.4346333333, 0.5456833333, 0.5906833333, 0.3963, 0.5804333333, 0.4025333333, 0.37905, 0.4548166667, 0.5958166667, 0.6374, 0.5242333333, 0.7158666667, 0.6785666667, 0.4731666667, 0.5113666667, 0.5717666667, 0.72695, 0.6119166667, 0.7437666667, 0.9049166667, 0.6599333333, 0.6635166667, 0.8086, 0.8873666667, 0.8808, 0.8048666667, 0.9575666667, 0.9104166667, 0.9148166667, 0.79295, 0.91985, 0.9997833333, 0.87695, 0.9140666667, 0.9472166667, 1.004583333, 1.15465, 1.294066667, 1.196083333, 1.118283333, 1.2478, 1.276416667, 1.114533333, 1.1564, 1.452833333, 1.552316667]);
+    // const file_path = `${(window.location.href.includes('unctad.org')) ? 'https://storage.unctad.org/2025-cop30/' : (window.location.href.includes('localhost:80')) ? './' : 'https://unctad-infovis.github.io/2025-cop30/'}`;
+    // Promise.all([
+    //   d3.text(`${file_path}assets/data/GLB.Ts+dSST.csv`),
+    //   d3.text(`${file_path}assets/data/NH.Ts+dSST.csv`),
+    //   d3.text(`${file_path}assets/data/SH.Ts+dSST.csv`)
+    // ]).then((files) => {
+    //   files = files.map(file => d3.csvParse(file.split('\n').slice(1).join('\n')));
+    //   setData(files[hemispheres[hemisphere]].map((file, i) => {
+    //     if (i === 0 && file[months[month]] === '***') {
+    //       start_year = 1880;
+    //     } else if (i === (files[hemispheres[hemisphere]].length - 1) && file[months[month]] === '***') {
+    //       end_year = 2024;
+    //     }
+    //     return +file[months[month]];
+    //   }));
+    // }).catch((err) => {
+    //   console.log(err);
+    // });
   }, []);
 
   useEffect(() => {
@@ -233,9 +252,9 @@ function App() {
           <div className="main_title_container">
             <img src="https://static.dwcdn.net/custom/themes/unctad-2024-rebrand/Blue%20arrow.svg" className="logo" alt="UN Trade and Development logo" />
             <div className="title">
-              <h3>Temperatures on the rise</h3>
+              <h3>Global heating pushes temperatures into danger zone</h3>
               <h4>
-                Combined mean land-surface air and sea-surface water temperature anomalies (land-ocean temperature index, L-OTI),
+                Annual global mean temperature anomalies relative to a pre-industrial (1850–1900) baseline, celcius,
                 {(month !== 'Year') ? ` in ${month}` : ''}
                 {' '}
                 {start_year}
@@ -246,26 +265,33 @@ function App() {
           </div>
         </div>
       </div>
-      <div className="chart_container" ref={chartRef} />
-      <div className="info_container">
-        <div className="hemispehere">{hemisphere}</div>
-        <div className="year_container">{curYear}</div>
-        <div className="temp_container" style={{ color: f_text(currentTemp) }}>
-          {((currentTemp > 0) ? '+' : '') + currentTemp}
-          °C
+      <div className="chart_wrapper">
+        {isFinished && (
+        <button className="restart_button" onClick={restartAnimation} type="button">
+          Restart animation
+        </button>
+        )}
+        <div className="chart_container" ref={chartRef} />
+        <div className="info_container">
+          <div className="hemispehere">{hemisphere}</div>
+          <div className="year_container">{curYear}</div>
+          <div className="temp_container" style={{ color: f_text(currentTemp) }}>
+            {((currentTemp > 0) ? '+' : '') + roundNr(currentTemp, 2)}
+            °C
+          </div>
         </div>
       </div>
       <div className="caption_container">
         <em>Source:</em>
         {' '}
-        UN Trade and Development (UNCTAD), based
+        UN Trade and Development (UNCTAD), based on data from
         {' '}
-        <a href="https://data.giss.nasa.gov/gistemp/" target="_blank" rel="noreferrer">NASA</a>
-        .
+        <a href="https://wmo.int/publication-series/state-of-global-climate-2024" target="_blank" rel="noreferrer">World Meteorological Organization (WMO)</a>
+        . The annual average is calculated as the average from available data for each year.
         <br />
         <em>Note:</em>
         {' '}
-        Reference period: 1951–1980
+        The WMO temperature assessment draws on six datasets: the European Center for Medium Range Weather Forecasts (ECMWF), Japan Meteorological Agency, NASA, the US National Oceanic and Atmospheric Administration (NOAA), the UK’s Met Office in collaboration with the Climatic Research Unit at the University of East Anglia (HadCRUT), and Berkeley Earth.
       </div>
       <div className="tooltip" />
     </div>
