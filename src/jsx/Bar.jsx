@@ -250,7 +250,7 @@ function App() {
       <div className="title_container">
         <div className="text_container">
           <div className="main_title_container">
-            <img src="https://static.dwcdn.net/custom/themes/unctad-2024-rebrand/Blue%20arrow.svg" className="logo" alt="UN Trade and Development logo" />
+            <img src="https://static.dwcdn.net/custom/themes/unctad-2024-rebrand/Blue%20arrow.svg" className="logo" alt="UN Trade and Development logo" width="44" height="44" />
             <div className="title">
               <h3>Global heating pushes temperatures into danger zone</h3>
               <h4>
